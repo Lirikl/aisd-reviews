@@ -159,14 +159,14 @@ template<class KeyType, class ValueType, class Hash>
 template<class ForwardIterator>
 HashMap<KeyType, ValueType, Hash>::
 HashMap(ForwardIterator first, ForwardIterator last, const Hash &hasher_): hasher(hasher_) {
-    std::vector<element > v;
+    std::vector<element > data_temp;
     while (first != last) {
-        v.emplace_back(*first);
+        data_temp.emplace_back(*first);
         first++;
     }
     sz = 0;
-    data.resize(std::max(v.size(), START_SIZE) * SIZE_MULTIPLICATOR);
-    for (const auto &elem: v) {
+    data.resize(std::max(data_temp.size(), START_SIZE) * SIZE_MULTIPLICATOR);
+    for (const auto &elem: data_temp) {
         insert(elem);
     }
 }
@@ -175,15 +175,15 @@ template<class KeyType, class ValueType, class Hash>
 HashMap<KeyType, ValueType, Hash>::
 HashMap(const std::initializer_list<element> &init,
         const Hash &hasher_): hasher(hasher_) {
-    std::vector<element> v;
+    std::vector<element> data_temp;
     auto first = init.begin(), last = init.end();
     while (first != last) {
-        v.emplace_back(*first);
+        data_temp.emplace_back(*first);
         first++;
     }
     sz = 0;
-    data.resize(std::max(v.size(), START_SIZE) * SIZE_MULTIPLICATOR);
-    for (const auto &elem: v) {
+    data.resize(std::max(data_temp.size(), START_SIZE) * SIZE_MULTIPLICATOR);
+    for (const auto &elem: data_temp) {
         insert(elem);
     }
 }
@@ -191,32 +191,32 @@ HashMap(const std::initializer_list<element> &init,
 template<class KeyType, class ValueType, class Hash>
 HashMap<KeyType, ValueType, Hash>::
 HashMap(const HashMap &init) {
-    std::vector<element> v;
+    std::vector<element> data_temp;
     auto first = init.begin(), last = init.end();
     while (first != last) {
-        v.emplace_back(*first);
+        data_temp.emplace_back(*first);
         first++;
     }
     sz = 0;
-    data.resize(std::max(v.size(), START_SIZE) * SIZE_MULTIPLICATOR);
-    for (const auto &elem: v) {
+    data.resize(std::max(data_temp.size(), START_SIZE) * SIZE_MULTIPLICATOR);
+    for (const auto &elem: data_temp) {
         insert(elem);
     }
 }
 
 template<class KeyType, class ValueType, class Hash>
 void HashMap<KeyType, ValueType, Hash>::rebuild() {
-    std::vector<element> v;
+    std::vector<element> data_temp;
     for (const auto &x: data) {
         for (const auto &y: x)
-            v.emplace_back(y.elem);
+            data_temp.emplace_back(y.elem);
     }
     size_t old_sz = data.size();
     list.clear();
     data.clear();
     data.resize(std::max(old_sz, START_SIZE) * SIZE_MULTIPLICATOR);
     sz = 0;
-    for (const auto &elem: v) {
+    for (const auto &elem: data_temp) {
         insert(elem);
     }
 }
