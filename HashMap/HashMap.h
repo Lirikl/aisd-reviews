@@ -7,19 +7,22 @@
 
 template<class KeyType, class ValueType, class Hash = std::hash<KeyType> >
 class HashMap {
+    using element = std::pair<KeyType, ValueType>;
+	static const size_t START_SIZE;
+	static const size_t SIZE_MULTIPLICATOR;
     struct Data_member {
-        std::pair<KeyType, ValueType> elem;
-        typename std::list<std::pair<KeyType, ValueType> *>::iterator iter;
+        element elem;
+        typename std::list<element*>::iterator iter;
     };
 public:
     class iterator {
         friend class const_iterator;
 
-        typename std::list<std::pair<KeyType, ValueType> *>::iterator it;
+        typename std::list<element*>::iterator it;
     public:
         iterator() {}
 
-        iterator(const typename std::list<std::pair<KeyType, ValueType> *>::iterator it_) : it(it_) {}
+        iterator(const typename std::list<element *>::iterator it_) : it(it_) {}
 
         iterator &operator++() {
             ++it;
@@ -50,14 +53,14 @@ public:
     };
 
     class const_iterator {
-        typename std::list<std::pair<KeyType, ValueType> *>::const_iterator it;
+        typename std::list<element *>::const_iterator it;
     public:
 
         const_iterator() {}
 
-        const_iterator(const typename std::list<std::pair<KeyType, ValueType> *>::const_iterator it_) : it(it_) {}
+        const_iterator(const typename std::list<element *>::const_iterator it_) : it(it_) {}
 
-        const_iterator(const typename std::list<std::pair<KeyType, ValueType> *>::iterator it_) : it(it_) {}
+        const_iterator(const typename std::list<element *>::iterator it_) : it(it_) {}
 
         const_iterator(const iterator it_) : it(it_.it) {}
 
@@ -94,7 +97,7 @@ private:
     size_t sz;
     Hash hasher;
     std::vector<std::list<Data_member>> data;
-    std::list<std::pair<KeyType, ValueType> *> list;
+    std::list<element *> list;
 
     size_t hash(const KeyType &) const;
 
@@ -106,7 +109,7 @@ public:
     template<class ForwardIterator>
     HashMap(ForwardIterator, ForwardIterator, const Hash &hasher_ = Hash());
 
-    HashMap(const std::initializer_list<std::pair<KeyType, ValueType>> &, const Hash &hasher_ = Hash());
+    HashMap(const std::initializer_list<element> &, const Hash &hasher_ = Hash());
 
     HashMap(const HashMap &);
 
@@ -114,7 +117,7 @@ public:
 
     bool empty() const;
 
-    void insert(const std::pair<KeyType, ValueType> &);
+    void insert(const element &);
 
     void erase(const KeyType &);
 
@@ -140,22 +143,29 @@ public:
 };
 
 template<class KeyType, class ValueType, class Hash>
+const size_t HashMap<KeyType, ValueType, Hash>::START_SIZE = 4;
+
+
+template<class KeyType, class ValueType, class Hash>
+const size_t HashMap<KeyType, ValueType, Hash>::SIZE_MULTIPLICATOR = 4;
+
+template<class KeyType, class ValueType, class Hash>
 HashMap<KeyType, ValueType, Hash>::HashMap(const Hash &hasher_): hasher(hasher_) {
     sz = 0;
-    data.resize(4);
+    data.resize(START_SIZE);
 }
 
 template<class KeyType, class ValueType, class Hash>
 template<class ForwardIterator>
 HashMap<KeyType, ValueType, Hash>::
-HashMap(ForwardIterator it1, ForwardIterator it2, const Hash &hasher_): hasher(hasher_) {
-    std::vector<std::pair<KeyType, ValueType> > v;
-    while (it1 != it2) {
-        v.emplace_back(*it1);
-        it1++;
+HashMap(ForwardIterator first, ForwardIterator last, const Hash &hasher_): hasher(hasher_) {
+    std::vector<element > v;
+    while (first != last) {
+        v.emplace_back(*first);
+        first++;
     }
     sz = 0;
-    data.resize(std::max(v.size(), static_cast<size_t>(4)) * 4);
+    data.resize(std::max(v.size(), START_SIZE) * SIZE_MULTIPLICATOR);
     for (const auto &elem: v) {
         insert(elem);
     }
@@ -163,16 +173,16 @@ HashMap(ForwardIterator it1, ForwardIterator it2, const Hash &hasher_): hasher(h
 
 template<class KeyType, class ValueType, class Hash>
 HashMap<KeyType, ValueType, Hash>::
-HashMap(const std::initializer_list<std::pair<KeyType, ValueType>> &init,
+HashMap(const std::initializer_list<element> &init,
         const Hash &hasher_): hasher(hasher_) {
-    std::vector<std::pair<KeyType, ValueType>> v;
-    auto it1 = init.begin(), it2 = init.end();
-    while (it1 != it2) {
-        v.emplace_back(*it1);
-        it1++;
+    std::vector<element> v;
+    auto first = init.begin(), last = init.end();
+    while (first != last) {
+        v.emplace_back(*first);
+        first++;
     }
     sz = 0;
-    data.resize(std::max(v.size(), static_cast<size_t>(4)) * 4);
+    data.resize(std::max(v.size(), START_SIZE) * SIZE_MULTIPLICATOR);
     for (const auto &elem: v) {
         insert(elem);
     }
@@ -181,14 +191,14 @@ HashMap(const std::initializer_list<std::pair<KeyType, ValueType>> &init,
 template<class KeyType, class ValueType, class Hash>
 HashMap<KeyType, ValueType, Hash>::
 HashMap(const HashMap &init) {
-    std::vector<std::pair<KeyType, ValueType>> v;
-    auto it1 = init.begin(), it2 = init.end();
-    while (it1 != it2) {
-        v.emplace_back(*it1);
-        it1++;
+    std::vector<element> v;
+    auto first = init.begin(), last = init.end();
+    while (first != last) {
+        v.emplace_back(*first);
+        first++;
     }
     sz = 0;
-    data.resize(std::max(v.size(), static_cast<size_t>(4)) * 4);
+    data.resize(std::max(v.size(), START_SIZE) * SIZE_MULTIPLICATOR);
     for (const auto &elem: v) {
         insert(elem);
     }
@@ -196,16 +206,15 @@ HashMap(const HashMap &init) {
 
 template<class KeyType, class ValueType, class Hash>
 void HashMap<KeyType, ValueType, Hash>::rebuild() {
-    std::vector<std::pair<KeyType, ValueType>> v;
+    std::vector<element> v;
     for (const auto &x: data) {
         for (const auto &y: x)
             v.emplace_back(y.elem);
     }
     size_t old_sz = data.size();
     list.clear();
-
     data.clear();
-    data.resize(std::max(old_sz, static_cast<size_t>(4)) * 2);
+    data.resize(std::max(old_sz, START_SIZE) * SIZE_MULTIPLICATOR);
     sz = 0;
     for (const auto &elem: v) {
         insert(elem);
@@ -229,7 +238,7 @@ bool HashMap<KeyType, ValueType, Hash>::empty() const {
 
 
 template<class KeyType, class ValueType, class Hash>
-void HashMap<KeyType, ValueType, Hash>::insert(const std::pair<KeyType, ValueType> &elem) {
+void HashMap<KeyType, ValueType, Hash>::insert(const element &elem) {
     if (sz + 1 >= data.size() / 2)
         rebuild();
     size_t h = hash(elem.first);
@@ -271,7 +280,7 @@ ValueType &HashMap<KeyType, ValueType, Hash>::operator[](const KeyType &key) {
         }
     }
 
-    Data_member member{std::pair<KeyType, ValueType>(key, ValueType()), list.end()};
+    Data_member member{element(key, ValueType()), list.end()};
     data[h].emplace_back(member);
     list.emplace_back(&data[h].back().elem);
     data[h].back().iter = prev(list.end());
@@ -290,7 +299,6 @@ const ValueType &HashMap<KeyType, ValueType, Hash>::at(const KeyType &key) const
     }
 
     throw std::out_of_range("");
-
 }
 
 template<class KeyType, class ValueType, class Hash>
@@ -298,7 +306,7 @@ void HashMap<KeyType, ValueType, Hash>::clear() {
     list.clear();
     data.clear();
     sz = 0;
-    data.resize(4);
+    data.resize(START_SIZE);
 }
 
 template<class KeyType, class ValueType, class Hash>
