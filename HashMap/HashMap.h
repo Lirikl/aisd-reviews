@@ -7,22 +7,23 @@
 
 template<class KeyType, class ValueType, class Hash = std::hash<KeyType> >
 class HashMap {
-    using element = std::pair<KeyType, ValueType>;
+    using Element = std::pair<KeyType, ValueType>;
 	static const size_t START_SIZE;
 	static const size_t SIZE_MULTIPLICATOR;
-    struct Data_member {
-        element elem;
-        typename std::list<element*>::iterator iter;
+	static const size_t SIZE_BORDER;
+    struct DataMember {
+        Element elem;
+        typename std::list<Element*>::iterator iter;
     };
 public:
     class iterator {
         friend class const_iterator;
 
-        typename std::list<element*>::iterator it;
+        typename std::list<Element*>::iterator it;
     public:
         iterator() {}
 
-        iterator(const typename std::list<element *>::iterator it_) : it(it_) {}
+        iterator(const typename std::list<Element *>::iterator it_) : it(it_) {}
 
         iterator &operator++() {
             ++it;
@@ -53,14 +54,14 @@ public:
     };
 
     class const_iterator {
-        typename std::list<element *>::const_iterator it;
+        typename std::list<Element *>::const_iterator it;
     public:
 
         const_iterator() {}
 
-        const_iterator(const typename std::list<element *>::const_iterator it_) : it(it_) {}
+        const_iterator(const typename std::list<Element *>::const_iterator it_) : it(it_) {}
 
-        const_iterator(const typename std::list<element *>::iterator it_) : it(it_) {}
+        const_iterator(const typename std::list<Element *>::iterator it_) : it(it_) {}
 
         const_iterator(const iterator it_) : it(it_.it) {}
 
@@ -96,8 +97,8 @@ private:
     //const size_t REHASH = 1e9+7;
     size_t sz;
     Hash hasher;
-    std::vector<std::list<Data_member>> data;
-    std::list<element *> list;
+    std::vector<std::list<DataMember>> data;
+    std::list<Element *> list;
 
     size_t hash(const KeyType &) const;
 
@@ -109,7 +110,7 @@ public:
     template<class ForwardIterator>
     HashMap(ForwardIterator, ForwardIterator, const Hash &hasher_ = Hash());
 
-    HashMap(const std::initializer_list<element> &, const Hash &hasher_ = Hash());
+    HashMap(const std::initializer_list<Element> &, const Hash &hasher_ = Hash());
 
     HashMap(const HashMap &);
 
@@ -117,7 +118,7 @@ public:
 
     bool empty() const;
 
-    void insert(const element &);
+    void insert(const Element &);
 
     void erase(const KeyType &);
 
@@ -150,6 +151,9 @@ template<class KeyType, class ValueType, class Hash>
 const size_t HashMap<KeyType, ValueType, Hash>::SIZE_MULTIPLICATOR = 4;
 
 template<class KeyType, class ValueType, class Hash>
+const size_t HashMap<KeyType, ValueType, Hash>::SIZE_BORDER = 2;
+
+template<class KeyType, class ValueType, class Hash>
 HashMap<KeyType, ValueType, Hash>::HashMap(const Hash &hasher_): hasher(hasher_) {
     sz = 0;
     data.resize(START_SIZE);
@@ -159,7 +163,7 @@ template<class KeyType, class ValueType, class Hash>
 template<class ForwardIterator>
 HashMap<KeyType, ValueType, Hash>::
 HashMap(ForwardIterator first, ForwardIterator last, const Hash &hasher_): hasher(hasher_) {
-    std::vector<element > data_temp;
+    std::vector<Element > data_temp;
     while (first != last) {
         data_temp.emplace_back(*first);
         first++;
@@ -173,9 +177,9 @@ HashMap(ForwardIterator first, ForwardIterator last, const Hash &hasher_): hashe
 
 template<class KeyType, class ValueType, class Hash>
 HashMap<KeyType, ValueType, Hash>::
-HashMap(const std::initializer_list<element> &init,
+HashMap(const std::initializer_list<Element> &init,
         const Hash &hasher_): hasher(hasher_) {
-    std::vector<element> data_temp;
+    std::vector<Element> data_temp;
     auto first = init.begin(), last = init.end();
     while (first != last) {
         data_temp.emplace_back(*first);
@@ -191,7 +195,7 @@ HashMap(const std::initializer_list<element> &init,
 template<class KeyType, class ValueType, class Hash>
 HashMap<KeyType, ValueType, Hash>::
 HashMap(const HashMap &init) {
-    std::vector<element> data_temp;
+    std::vector<Element> data_temp;
     auto first = init.begin(), last = init.end();
     while (first != last) {
         data_temp.emplace_back(*first);
@@ -206,10 +210,10 @@ HashMap(const HashMap &init) {
 
 template<class KeyType, class ValueType, class Hash>
 void HashMap<KeyType, ValueType, Hash>::rebuild() {
-    std::vector<element> data_temp;
-    for (const auto &x: data) {
-        for (const auto &y: x)
-            data_temp.emplace_back(y.elem);
+    std::vector<Element> data_temp;
+    for (const auto &container: data) {
+        for (const auto &member: container)
+            data_temp.emplace_back(member.elem);
     }
     size_t old_sz = data.size();
     list.clear();
@@ -238,8 +242,8 @@ bool HashMap<KeyType, ValueType, Hash>::empty() const {
 
 
 template<class KeyType, class ValueType, class Hash>
-void HashMap<KeyType, ValueType, Hash>::insert(const element &elem) {
-    if (sz + 1 >= data.size() / 2)
+void HashMap<KeyType, ValueType, Hash>::insert(const Element &elem) {
+    if (sz + 1 >= data.size() / SIZE_BORDER)
         rebuild();
     size_t h = hash(elem.first);
     for (const auto &member : data[h]) {
@@ -247,7 +251,7 @@ void HashMap<KeyType, ValueType, Hash>::insert(const element &elem) {
             return;
         }
     }
-    Data_member member{elem, list.end()};
+    DataMember member{elem, list.end()};
     data[h].emplace_back(member);
     list.emplace_back(&data[h].back().elem);
     data[h].back().iter = prev(list.end());
@@ -270,7 +274,7 @@ void HashMap<KeyType, ValueType, Hash>::erase(const KeyType &key) {
 
 template<class KeyType, class ValueType, class Hash>
 ValueType &HashMap<KeyType, ValueType, Hash>::operator[](const KeyType &key) {
-    if (sz + 1 >= data.size() / 2)
+    if (sz + 1 >= data.size() / SIZE_BORDER)
         rebuild();
     size_t h = hash(key);
 
@@ -280,7 +284,7 @@ ValueType &HashMap<KeyType, ValueType, Hash>::operator[](const KeyType &key) {
         }
     }
 
-    Data_member member{element(key, ValueType()), list.end()};
+    DataMember member{Element(key, ValueType()), list.end()};
     data[h].emplace_back(member);
     list.emplace_back(&data[h].back().elem);
     data[h].back().iter = prev(list.end());
