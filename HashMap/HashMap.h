@@ -8,9 +8,9 @@
 template<class KeyType, class ValueType, class Hash = std::hash<KeyType> >
 class HashMap {
     using Element = std::pair<KeyType, ValueType>;
-	static const size_t START_SIZE;
-	static const size_t SIZE_MULTIPLICATOR;
-	static const size_t SIZE_BORDER;
+    static const size_t START_SIZE;
+    static const size_t SIZE_MULTIPLICATOR;
+    static const size_t SIZE_BORDER;
     struct DataMember {
         Element elem;
         typename std::list<Element*>::iterator iter;
